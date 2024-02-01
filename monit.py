@@ -175,12 +175,12 @@ if __name__ == "__main__":
     if "check" in os.sys.argv:
         report = check_resources()
         print("Report generated:\n")
-        print(f"id : {report["id"]}")
-        print(f"timestamp : {report["timestamp"]}")
-        print(f"cpu_percent : {str(report["cpu_percent"])}%")
-        print(f"ram_percent : {str(report["ram_percent"])}%")
-        print(f"disk_percent : {str(report["disk_percent"])}%")
-        print(f"ports_status : {str(report["ports_status"])}")
+        print(f"id : {report['id']}")
+        print(f"timestamp : {report['timestamp']}")
+        print(f"cpu_percent : {str(report['cpu_percent'])}%")
+        print(f"ram_percent : {str(report['ram_percent'])}%")
+        print(f"disk_percent : {str(report['disk_percent'])}%")
+        print(f"ports_status : {str(report['ports_status'])}")
 
     elif "list" in os.sys.argv:
         listReports = list_reports()
