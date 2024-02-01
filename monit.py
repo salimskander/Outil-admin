@@ -1,6 +1,7 @@
 import psutil
 import json
 import argparse
+import platform
 
 def get_system_info():
     # Obtient les informations sur l'utilisation du CPU, de la RAM et du disque
@@ -8,13 +9,32 @@ def get_system_info():
     ram_usage = psutil.virtual_memory().percent
     disk_usage = psutil.disk_usage('/').percent
 
-    # Vous pouvez ajouter d'autres informations comme la température du CPU, la charge système, etc.
+    # Obtient des informations sur le CPU, y compris la température si disponible
+    cpu_info = {}
+    try:
+        # Surveiller la température du CPU (peut varier en fonction du matériel)
+        temps = psutil.sensors_temperatures()
+        cpu_temp = temps['coretemp'][0].current if 'coretemp' in temps else None
+        cpu_info['temperature'] = cpu_temp
+    except Exception as e:
+        cpu_info['temperature'] = None
+
+    # Obtient la charge système moyenne sur 1, 5 et 15 minutes
+    system_load = psutil.getloadavg()
 
     # Crée un dictionnaire avec les informations collectées
     system_info = {
         "cpu_usage": cpu_usage,
         "ram_usage": ram_usage,
-        "disk_usage": disk_usage
+        "disk_usage": disk_usage,
+        "cpu_info": cpu_info,
+        "system_load": {
+            "load_1min": system_load[0],
+            "load_5min": system_load[1],
+            "load_15min": system_load[2]
+        },
+        "system_platform": platform.system(),
+        "system_version": platform.version()
         # Ajoutez d'autres clés et valeurs selon vos besoins
     }
 
@@ -40,7 +60,21 @@ def main():
         print("Utilisation RAM: {}%".format(system_info["ram_usage"]))
         print("Utilisation du disque: {}%".format(system_info["disk_usage"]))
 
-    # Vous pouvez ajouter d'autres formats de sortie selon vos besoins
+        # Informations supplémentaires sur le CPU
+        cpu_info = system_info.get("cpu_info", {})
+        if cpu_info.get("temperature") is not None:
+            print("Température du CPU: {}°C".format(cpu_info["temperature"]))
+
+        # Charge système moyenne
+        print("Charge système (1min/5min/15min): {:.2f} {:.2f} {:.2f}".format(
+            system_info["system_load"]["load_1min"],
+            system_info["system_load"]["load_5min"],
+            system_info["system_load"]["load_15min"]
+        ))
+
+        # Informations sur la plateforme système
+        print("Plateforme système: {}".format(system_info["system_platform"]))
+        print("Version du système: {}".format(system_info["system_version"]))
 
 if __name__ == "__main__":
     main()
