@@ -1,85 +1,46 @@
-import os
-import json
-import datetime
-import socket
-import logging
-from logging.handlers import RotatingFileHandler
 import psutil
+import json
+import argparse
 
-# Configurations
-LOG_DIR = "/var/monit"
-REPORTS_DIR = "/var/monit/reports"
+def get_system_info():
+    # Obtient les informations sur l'utilisation du CPU, de la RAM et du disque
+    cpu_usage = psutil.cpu_percent(interval=1)
+    ram_usage = psutil.virtual_memory().percent
+    disk_usage = psutil.disk_usage('/').percent
 
+    # Vous pouvez ajouter d'autres informations comme la température du CPU, la charge système, etc.
 
-class Monitor:
-    def __init__(self):
-        self.setup_logging()
+    # Crée un dictionnaire avec les informations collectées
+    system_info = {
+        "cpu_usage": cpu_usage,
+        "ram_usage": ram_usage,
+        "disk_usage": disk_usage
+        # Ajoutez d'autres clés et valeurs selon vos besoins
+    }
 
-    def setup_logging(self):
-        log_file = os.path.join(LOG_DIR, "monit.log")
+    return system_info
 
-        if not os.path.exists(LOG_DIR):
-            os.makedirs(LOG_DIR)
+def main():
+    # Initialise l'analyseur d'arguments de la ligne de commande
+    parser = argparse.ArgumentParser(description='Outil de monitoring système')
+    parser.add_argument('--json', action='store_true', help='Retourne les résultats au format JSON')
 
-        logging.basicConfig(
-            handlers=[RotatingFileHandler(log_file, maxBytes=102400, backupCount=5)],
-            format="%(asctime)s [%(levelname)s] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-            level=logging.INFO,
-        )
+    # Analyse les arguments de la ligne de commande
+    args = parser.parse_args()
 
-    def check_resources(self):
-        cpu_percent = psutil.cpu_percent()
-        ram_percent = psutil.virtual_memory().percent
-        disk_percent = psutil.disk_usage("/").percent
+    # Obtient les informations système
+    system_info = get_system_info()
 
-        ports_to_monitor = [80, 443]  # Example ports to monitor
+    # Si l'option --json est spécifiée, imprime les résultats au format JSON
+    if args.json:
+        print(json.dumps(system_info, indent=2))
+    else:
+        # Sinon, imprime les résultats de manière lisible
+        print("Utilisation CPU: {}%".format(system_info["cpu_usage"]))
+        print("Utilisation RAM: {}%".format(system_info["ram_usage"]))
+        print("Utilisation du disque: {}%".format(system_info["disk_usage"]))
 
-        # Check Ports
-        ports_status = {}
-        for port in ports_to_monitor:
-            ports_status[port] = self.is_port_open("127.0.0.1", port)
-
-        report = {
-            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "id": str(hash(datetime.datetime.now())),
-            "cpu_percent": cpu_percent,
-            "ram_percent": ram_percent,
-            "disk_percent": disk_percent,
-            "ports_status": ports_status,
-        }
-
-        report_file = os.path.join(REPORTS_DIR, f"report_{report['id']}.json")
-        with open(report_file, "w") as report_file:
-            json.dump(report, report_file, indent=2)
-
-        logging.info("Check completed and report generated.")
-        return report
-
-    def is_port_open(self, host, port):
-        try:
-            with socket.create_connection((host, port), timeout=1):
-                return True
-        except (socket.timeout, ConnectionRefusedError):
-            return False
-
+    # Vous pouvez ajouter d'autres formats de sortie selon vos besoins
 
 if __name__ == "__main__":
-    monitor = Monitor()
-
-    if not os.path.exists(REPORTS_DIR):
-        os.makedirs(REPORTS_DIR)
-
-    # Command
-    if "check" in os.sys.argv:
-        report = monitor.check_resources()
-        print("Report generated:\n")
-        print(f"id : {report['id']}")
-        print(f"timestamp : {report['timestamp']}")
-        print(f"cpu_percent : {str(report['cpu_percent'])}%")
-        print(f"ram_percent : {str(report['ram_percent'])}%")
-        print(f"disk_percent : {str(report['disk_percent'])}%")
-        print(f"ports_status : {str(report['ports_status'])}")
-
-    else:
-        print("Usage: python monit.py [check]")
+    main()
