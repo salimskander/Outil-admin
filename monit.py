@@ -33,7 +33,15 @@ def load_config():
     if not os.path.exists(CONFIG_FILE_PATH):
         os.makedirs(os.path.dirname(CONFIG_FILE_PATH), exist_ok=True)
         with open(CONFIG_FILE_PATH, "w") as config_file:
-            json.dump({"ports": [],"alert_thresholds": {"cpu": 90,"ram": 20,"disk": 95},"discord_webhook_url": "YOUR_DISCORD_WEBHOOK_URL"}, config_file, indent=2)
+            json.dump(
+                {
+                    "ports": [],
+                    "alert_thresholds": {"cpu": 90, "ram": 20, "disk": 95},
+                    "discord_webhook_url": "YOUR_DISCORD_WEBHOOK_URL",
+                },
+                config_file,
+                indent=2,
+            )
 
     with open(CONFIG_FILE_PATH, "r") as config_file:
         return json.load(config_file)
@@ -79,6 +87,7 @@ def check_resources():
     logging.info("Check completed and report generated.")
     return report
 
+
 def send_alert(alert_values):
     config = load_config()
     discord_webhook_url = config.get("discord_webhook_url")
@@ -93,7 +102,6 @@ def send_alert(alert_values):
         logging.info("Alert sent to Discord.")
     else:
         logging.warning("Discord webhook URL not configured. Unable to send alerts.")
-
 
 
 def list_reports():
@@ -119,7 +127,9 @@ def get_last_report():
 def get_average_report(last_x_hours):
     reports = list_reports()
     recent_reports = [
-        report_id for report_id in reports if is_within_last_x_hours(report_id, last_x_hours)
+        report_id
+        for report_id in reports
+        if is_within_last_x_hours(report_id, last_x_hours)
     ]
 
     if recent_reports:
@@ -139,22 +149,26 @@ def get_average_report(last_x_hours):
         average_report["ram_percent"] /= total_reports
         average_report["disk_percent"] /= total_reports
 
-        logging.info("Calculated the average report for the last %d hours.", last_x_hours)
+        logging.info(
+            "Calculated the average report for the last %d hours.", last_x_hours
+        )
         return average_report
     else:
         logging.warning("No reports available in the specified time range.")
         return None
+
 
 def is_within_last_x_hours(report_id, last_x_hours):
     report_file = os.path.join(REPORTS_DIR, report_id)
     with open(report_file, "r") as report_file:
         report_data = json.load(report_file)
 
-    report_time = datetime.datetime.strptime(report_data["timestamp"], "%Y-%m-%d %H:%M:%S")
+    report_time = datetime.datetime.strptime(
+        report_data["timestamp"], "%Y-%m-%d %H:%M:%S"
+    )
     time_difference = datetime.datetime.now() - report_time
 
     return time_difference.total_seconds() / 3600 <= last_x_hours
-
 
 
 def is_port_open(host, port):
@@ -191,20 +205,20 @@ if __name__ == "__main__":
     elif "get" in os.sys.argv and "last" in os.sys.argv:
         report = get_last_report()
         print("Last report: \n")
-        print(f"id : {report["id"]}")
-        print(f"timestamp : {report["timestamp"]}")
-        print(f"cpu_percent : {str(report["cpu_percent"])}%")
-        print(f"ram_percent : {str(report["ram_percent"])}%")
-        print(f"disk_percent : {str(report["disk_percent"])}%")
-        print(f"ports_status : {str(report["ports_status"])}")
+        print(f"id : {report['id']}")
+        print(f"timestamp : {report['timestamp']}")
+        print(f"cpu_percent : {str(report['cpu_percent'])}%")
+        print(f"ram_percent : {str(report['ram_percent'])}%")
+        print(f"disk_percent : {str(report['disk_percent'])}%")
+        print(f"ports_status : {str(report['ports_status'])}")
 
     elif "get" in os.sys.argv and "avg" in os.sys.argv and len(os.sys.argv) == 4:
         last_x_hours = int(os.sys.argv[3])
         report = get_average_report(last_x_hours)
         print(f"Average report for the last {last_x_hours} hours: \n")
-        print(f"cpu_percent : {str(report["cpu_percent"])}%")
-        print(f"ram_percent : {str(report["ram_percent"])}%")
-        print(f"disk_percent : {str(report["disk_percent"])}%")
+        print(f"cpu_percent : {str(report['cpu_percent'])}%")
+        print(f"ram_percent : {str(report['ram_percent'])}%")
+        print(f"disk_percent : {str(report['disk_percent'])}%")
 
     else:
         print("Usage: python monit.py [check | list | get last | get avg X]")
