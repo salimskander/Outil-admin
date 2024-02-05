@@ -1,80 +1,149 @@
 import psutil
 import json
-import argparse
-import platform
+import os
+import datetime
+import socket
+import logging
+from logging.handlers import RotatingFileHandler
 
-def get_system_info():
-    # Obtient les informations sur l'utilisation du CPU, de la RAM et du disque
-    cpu_usage = psutil.cpu_percent(interval=1)
-    ram_usage = psutil.virtual_memory().percent
-    disk_usage = psutil.disk_usage('/').percent
+# Configurations
+LOG_DIR = "C:\\monit"
+CONFIG_FILE_PATH = "\etc\monit\monit_config.json"
+REPORTS_DIR = "C:\\monit\\reports"
 
-    # Obtient des informations sur le CPU, y compris la température si disponible
-    cpu_info = {}
-    try:
-        # Surveiller la température du CPU (peut varier en fonction du matériel)
-        temps = psutil.sensors_temperatures()
-        cpu_temp = temps['coretemp'][0].current if 'coretemp' in temps else None
-        cpu_info['temperature'] = cpu_temp
-    except Exception as e:
-        cpu_info['temperature'] = None
 
-    # Obtient la charge système moyenne sur 1, 5 et 15 minutes
-    system_load = psutil.getloadavg()
+def setup_logging():
+    log_file = os.path.join(LOG_DIR, "monit.log")
 
-    # Crée un dictionnaire avec les informations collectées
-    system_info = {
-        "cpu_usage": cpu_usage,
-        "ram_usage": ram_usage,
-        "disk_usage": disk_usage,
-        "cpu_info": cpu_info,
-        "system_load": {
-            "load_1min": system_load[0],
-            "load_5min": system_load[1],
-            "load_15min": system_load[2]
-        },
-        "system_platform": platform.system(),
-        "system_version": platform.version()
-        # Ajoutez d'autres clés et valeurs selon vos besoins
+    if not os.path.exists(LOG_DIR):
+        os.makedirs(LOG_DIR)
+
+    logging.basicConfig(
+        handlers=[RotatingFileHandler(log_file, maxBytes=102400, backupCount=5)],
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=logging.INFO,
+    )
+
+
+def load_config():
+    if not os.path.exists(CONFIG_FILE_PATH):
+        return {}
+
+    with open(CONFIG_FILE_PATH, "r") as config_file:
+        return json.load(config_file)
+
+
+def save_config(config):
+    with open(CONFIG_FILE_PATH, "w") as config_file:
+        json.dump(config, config_file, indent=2)
+
+
+def check_resources():
+    cpu_percent = psutil.cpu_percent()
+    ram_percent = psutil.virtual_memory().percent
+    disk_percent = psutil.disk_usage("/").percent
+
+    config = load_config()
+    ports_status = {}
+    for port in config.get("ports", []):
+        ports_status[port] = is_port_open("127.0.0.1", port)
+
+    report = {
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "id": str(hash(datetime.datetime.now())),
+        "cpu_percent": cpu_percent,
+        "ram_percent": ram_percent,
+        "disk_percent": disk_percent,
+        "ports_status": ports_status,
     }
 
-    return system_info
+    report_file = os.path.join(REPORTS_DIR, f"report_{report['id']}.json")
+    with open(report_file, "w") as report_file:
+        json.dump(report, report_file, indent=2)
 
-def main():
-    # Initialise l'analyseur d'arguments de la ligne de commande
-    parser = argparse.ArgumentParser(description='Outil de monitoring système')
-    parser.add_argument('--json', action='store_true', help='Retourne les résultats au format JSON')
+    logging.info("Check completed and report generated.")
+    return report
 
-    # Analyse les arguments de la ligne de commande
-    args = parser.parse_args()
 
-    # Obtient les informations système
-    system_info = get_system_info()
+def list_reports():
+    reports = [f for f in os.listdir(REPORTS_DIR) if f.startswith("report_")]
+    logging.info("List of available reports: %s", reports)
+    print(reports)
+    return reports
 
-    # Si l'option --json est spécifiée, imprime les résultats au format JSON
-    if args.json:
-        print(json.dumps(system_info, indent=2))
+
+def get_last_report():
+    reports = list_reports()
+    if reports:
+        latest_report = max(reports)
+        report_file = os.path.join(REPORTS_DIR, latest_report)
+        with open(report_file, "r") as report_file:
+            last_report = json.load(report_file)
+        logging.info("Retrieved the last report.")
+        return last_report
     else:
-        # Sinon, imprime les résultats de manière lisible
-        print("Utilisation CPU: {}%".format(system_info["cpu_usage"]))
-        print("Utilisation RAM: {}%".format(system_info["ram_usage"]))
-        print("Utilisation du disque: {}%".format(system_info["disk_usage"]))
+        logging.warning("No reports available.")
+        return None
 
-        # Informations supplémentaires sur le CPU
-        cpu_info = system_info.get("cpu_info", {})
-        if cpu_info.get("temperature") is not None:
-            print("Température du CPU: {}°C".format(cpu_info["temperature"]))
 
-        # Charge système moyenne
-        print("Charge système (1min/5min/15min): {:.2f} {:.2f} {:.2f}".format(
-            system_info["system_load"]["load_1min"],
-            system_info["system_load"]["load_5min"],
-            system_info["system_load"]["load_15min"]
-        ))
+def get_average_report(last_x_hours):
+    reports = list_reports()
+    recent_reports = sorted(reports, reverse=True)[:last_x_hours]
 
-        # Informations sur la plateforme système
-        print("Plateforme système: {}".format(system_info["system_platform"]))
-        print("Version du système: {}".format(system_info["system_version"]))
+    if recent_reports:
+        average_report = {"cpu_percent": 0, "ram_percent": 0, "disk_percent": 0}
+
+        for report_id in recent_reports:
+            report_file = os.path.join(REPORTS_DIR, report_id)
+            with open(report_file, "r") as report_file:
+                report_data = json.load(report_file)
+
+            average_report["cpu_percent"] += report_data["cpu_percent"]
+            average_report["ram_percent"] += report_data["ram_percent"]
+            average_report["disk_percent"] += report_data["disk_percent"]
+
+        total_reports = len(recent_reports)
+        average_report["cpu_percent"] /= total_reports
+        average_report["ram_percent"] /= total_reports
+        average_report["disk_percent"] /= total_reports
+
+        logging.info(
+            "Calculated the average report for the last %d hours.", last_x_hours
+        )
+        return average_report
+    else:
+        logging.warning("No reports available.")
+        return None
+
+
+def is_port_open(host, port):
+    try:
+        with socket.create_connection((host, port), timeout=1):
+            return True
+    except (socket.timeout, ConnectionRefusedError):
+        return False
+
 
 if __name__ == "__main__":
-    main()
+    setup_logging()
+
+    if not os.path.exists(REPORTS_DIR):
+        os.makedirs(REPORTS_DIR)
+
+    # Commands
+    if "check" in os.sys.argv:
+        check_resources()
+
+    elif "list" in os.sys.argv:
+        list_reports()
+
+    elif "get" in os.sys.argv and "last" in os.sys.argv:
+        get_last_report()
+
+    elif "get" in os.sys.argv and "avg" in os.sys.argv and len(os.sys.argv) == 4:
+        last_x_hours = int(os.sys.argv[3])
+        get_average_report(last_x_hours)
+
+    else:
+        print("Usage: python monit.py [check | list | get last | get avg X]")
