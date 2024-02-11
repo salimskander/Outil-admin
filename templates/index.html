@@ -1,47 +1,46 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Web Interface</title>
+    <title>Interface de Surveillance Système</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <h1>System Monitoring Dashboard</h1>
+    <h1>Tableau de Bord de Surveillance Système</h1>
 
-    <button onclick="checkResources()">Check Resources</button>
-    <button onclick="listReports()">List Reports</button>
-    <button onclick="getLastReport()">Get Last Report</button>
-    <button onclick="getAverageReport()">Get Average Report</button>
+    <button onclick="verifierRessources()">Vérifier les Ressources</button>
+    <button onclick="listeRapports()">Lister les Rapports</button>
+    <button onclick="dernierRapport()">Dernier Rapport</button>
+    <button onclick="rapportMoyen()">Rapport Moyen</button>
 
-    <div id="result"></div>
+    <div id="resultat"></div>
 
     <script>
-        function checkResources() {
+        function verifierRessources() {
             fetch('/api/check')
                 .then(response => response.json())
-                .then(data => document.getElementById('result').innerText = JSON.stringify(data, null, 2));
+                .then(data => document.getElementById('resultat').innerText = JSON.stringify(data, null, 2));
         }
 
-        function listReports() {
+        function listeRapports() {
             fetch('/api/list_reports')
                 .then(response => response.json())
-                .then(data => document.getElementById('result').innerText = JSON.stringify(data, null, 2));
+                .then(data => document.getElementById('resultat').innerText = JSON.stringify(data, null, 2));
         }
 
-        function getLastReport() {
+        function dernierRapport() {
             fetch('/api/get_last_report')
                 .then(response => response.json())
-                .then(data => document.getElementById('result').innerText = JSON.stringify(data, null, 2));
+                .then(data => document.getElementById('resultat').innerText = JSON.stringify(data, null, 2));
         }
 
-        function getAverageReport() {
-            const lastXHours = prompt('Enter the number of hours:');
-            if (lastXHours !== null) {
-                fetch(`/api/get_average_report/${lastXHours}`)
+        function rapportMoyen() {
+            const dernierXHeures = prompt('Entrez le nombre d\'heures :');
+            if (dernierXHeures !== null) {
+                fetch(`/api/get_average_report/${dernierXHeures}`)
                     .then(response => response.json())
-                    .then(data => document.getElementById('result').innerText = JSON.stringify(data, null, 2));
+                    .then(data => document.getElementById('resultat').innerText = JSON.stringify(data, null, 2));
             }
         }
     </script>

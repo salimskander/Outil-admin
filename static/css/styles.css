@@ -1,13 +1,10 @@
-/* styles.css */
 
-/* Réinitialisation des marges et des espacements par défaut */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Styles de base pour le corps */
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
@@ -19,13 +16,11 @@ body {
     height: 100vh;
 }
 
-/* Titre principal */
 h1 {
     text-align: center;
     margin-bottom: 2rem;
 }
 
-/* Boutons */
 button {
     background-color: #007bff;
     color: white;
@@ -40,8 +35,7 @@ button:hover {
     background-color: #0056b3;
 }
 
-/* Zone de résultat */
-#result {
+#resultat {
     width: 80%;
     max-width: 800px;
     min-height: 200px;
@@ -51,11 +45,10 @@ button:hover {
     border-radius: 5px;
     overflow-wrap: break-word;
     word-wrap: break-word;
-    white-space: pre-wrap; /* Pour conserver les retours à la ligne et les espaces dans le texte affiché */
+    white-space: pre-wrap; 
     margin-top: 2rem;
 }
 
-/* Media queries pour rendre le design responsive */
 @media screen and (max-width: 768px) {
     body {
         padding: 1rem;
