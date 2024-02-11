@@ -5,6 +5,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoring Web Interface</title>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-width: 600px;
+            overflow: auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body>
     <h1>System Monitoring Dashboard</h1>
@@ -20,19 +65,19 @@
         function checkResources() {
             fetch('/api/check')
                 .then(response => response.json())
-                .then(data => document.getElementById('result').innerText = JSON.stringify(data, null, 2));
+                .then(data => displayResult(JSON.stringify(data, null, 2)));
         }
 
         function listReports() {
             fetch('/api/list_reports')
                 .then(response => response.json())
-                .then(data => document.getElementById('result').innerText = JSON.stringify(data, null, 2));
+                .then(data => displayResult(JSON.stringify(data, null, 2)));
         }
 
         function getLastReport() {
             fetch('/api/get_last_report')
                 .then(response => response.json())
-                .then(data => document.getElementById('result').innerText = JSON.stringify(data, null, 2));
+                .then(data => displayResult(JSON.stringify(data, null, 2)));
         }
 
         function getAverageReport() {
@@ -40,8 +85,34 @@
             if (lastXHours !== null) {
                 fetch(`/api/get_average_report/${lastXHours}`)
                     .then(response => response.json())
-                    .then(data => document.getElementById('result').innerText = JSON.stringify(data, null, 2));
+                    .then(data => displayResult(JSON.stringify(data, null, 2)));
             }
+        }
+
+        function displayResult(result) {
+            document.getElementById('result').innerText = result;
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        function displayResult(result) {
+            document.getElementById('result').innerText = result;
+    
+            const data = JSON.parse(result);
+            const cpuChart = new Chart(document.getElementById('cpuChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Used', 'Unused'],
+                    datasets: [{
+                        data: [data.cpu_percent, 100 - data.cpu_percent],
+                        backgroundColor: ['#FF6384', '#DDDDDD'],
+                        hoverBackgroundColor: ['#FF6384', '#DDDDDD']
+                    }]
+                }
+            });
+            
+            // Répétez le processus pour la mémoire, le disque, etc.
         }
     </script>
 </body>
