@@ -6,25 +6,35 @@ import socket
 import logging
 from logging.handlers import RotatingFileHandler
 
-# Configurations
-LOG_DIR = "C:\\monit"
-CONFIG_FILE_PATH = "\etc\monit\monit_config.json"
-REPORTS_DIR = "C:\\monit\\reports"
-
+BASE_DIR = os.getcwd()
+MONIT_DIR = os.path.join(BASE_DIR, "monit")
+CONFIG_FILE_PATH = os.path.join(BASE_DIR,  "conf", "monit_config.json")
+REPORTS_DIR = os.path.join(BASE_DIR, "reports")
 
 def setup_logging():
-    log_file = os.path.join(LOG_DIR, "monit.log")
+    if not os.path.exists(MONIT_DIR):
+        os.makedirs(MONIT_DIR)
 
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)
+    log_file = os.path.join(MONIT_DIR, "monit.log")
 
-    logging.basicConfig(
-        handlers=[RotatingFileHandler(log_file, maxBytes=102400, backupCount=5)],
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        level=logging.INFO,
-    )
+    logger = logging.getLogger("monit_logger")
+    logger.setLevel(logging.INFO)
 
+    file_handler = RotatingFileHandler(log_file, maxBytes=102400, backupCount=5)
+    file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+    logger.addHandler(file_handler)
+
+    monit_file_handler = RotatingFileHandler(os.path.join(MONIT_DIR, "monit.log"), maxBytes=102400, backupCount=5)
+    monit_file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+    logger.addHandler(monit_file_handler)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+
+setup_logging()
 
 def load_config():
     if not os.path.exists(CONFIG_FILE_PATH):
@@ -33,21 +43,16 @@ def load_config():
     with open(CONFIG_FILE_PATH, "r") as config_file:
         return json.load(config_file)
 
-
 def save_config(config):
     with open(CONFIG_FILE_PATH, "w") as config_file:
         json.dump(config, config_file, indent=2)
-
 
 def check_resources():
     cpu_percent = psutil.cpu_percent()
     ram_percent = psutil.virtual_memory().percent
     disk_percent = psutil.disk_usage("/").percent
 
-    config = load_config()
-    ports_status = {}
-    for port in config.get("ports", []):
-        ports_status[port] = is_port_open("127.0.0.1", port)
+    ports_status = check_ports_status(load_config())
 
     report = {
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -58,6 +63,9 @@ def check_resources():
         "ports_status": ports_status,
     }
 
+    if not os.path.exists(REPORTS_DIR):
+        os.makedirs(REPORTS_DIR)
+
     report_file = os.path.join(REPORTS_DIR, f"report_{report['id']}.json")
     with open(report_file, "w") as report_file:
         json.dump(report, report_file, indent=2)
@@ -67,24 +75,34 @@ def check_resources():
 
 
 def list_reports():
+    if not os.path.exists(REPORTS_DIR):
+        logging.warning("Reports directory doesn't exist.")
+        return []
+
     reports = [f for f in os.listdir(REPORTS_DIR) if f.startswith("report_")]
     logging.info("List of available reports: %s", reports)
     print(reports)
     return reports
 
+import os
 
 def get_last_report():
     reports = list_reports()
     if reports:
-        latest_report = max(reports)
-        report_file = os.path.join(REPORTS_DIR, latest_report)
-        with open(report_file, "r") as report_file:
+
+        reports_with_dates = [(report, os.path.getctime(os.path.join(REPORTS_DIR, report))) for report in reports]
+        sorted_reports = sorted(reports_with_dates, key=lambda x: x[1], reverse=True)
+        latest_report_name = sorted_reports[0][0]
+        latest_report_path = os.path.join(REPORTS_DIR, latest_report_name)
+        with open(latest_report_path, "r") as report_file:
             last_report = json.load(report_file)
         logging.info("Retrieved the last report.")
         return last_report
     else:
         logging.warning("No reports available.")
         return None
+
+
 
 
 def get_average_report(last_x_hours):
@@ -116,22 +134,25 @@ def get_average_report(last_x_hours):
         logging.warning("No reports available.")
         return None
 
-
 def is_port_open(host, port):
     try:
         with socket.create_connection((host, port), timeout=1):
             return True
     except (socket.timeout, ConnectionRefusedError):
         return False
+    
+def check_ports_status(config):
+    logging.info("Loaded configuration: %s", config)  
+    ports_status = {}
+    for port in config.get("ports", []):
+        port_status = "Open" if is_port_open("127.0.0.1", port) else "Closed"
+        ports_status[port] = port_status
 
+    logging.info("Port status: %s", ports_status)
+    return ports_status
 
 if __name__ == "__main__":
-    setup_logging()
-
-    if not os.path.exists(REPORTS_DIR):
-        os.makedirs(REPORTS_DIR)
-
-    # Commands
+    
     if "check" in os.sys.argv:
         check_resources()
 
@@ -147,3 +168,4 @@ if __name__ == "__main__":
 
     else:
         print("Usage: python monit.py [check | list | get last | get avg X]")
+
