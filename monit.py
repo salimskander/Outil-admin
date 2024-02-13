@@ -8,8 +8,9 @@ from logging.handlers import RotatingFileHandler
 
 BASE_DIR = os.getcwd()
 MONIT_DIR = os.path.join(BASE_DIR, "monit")
-CONFIG_FILE_PATH = os.path.join(BASE_DIR,  "conf", "monit_config.json")
+CONFIG_FILE_PATH = os.path.join(BASE_DIR, "conf", "monit_config.json")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
+
 
 def setup_logging():
     if not os.path.exists(MONIT_DIR):
@@ -21,20 +22,34 @@ def setup_logging():
     logger.setLevel(logging.INFO)
 
     file_handler = RotatingFileHandler(log_file, maxBytes=102400, backupCount=5)
-    file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+    file_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
+    )
     logger.addHandler(file_handler)
 
-    monit_file_handler = RotatingFileHandler(os.path.join(MONIT_DIR, "monit.log"), maxBytes=102400, backupCount=5)
-    monit_file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+    monit_file_handler = RotatingFileHandler(
+        os.path.join(MONIT_DIR, "monit.log"), maxBytes=102400, backupCount=5
+    )
+    monit_file_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
+    )
     logger.addHandler(monit_file_handler)
 
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
-    console_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    console_formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)
 
+
 setup_logging()
+
 
 def load_config():
     if not os.path.exists(CONFIG_FILE_PATH):
@@ -43,9 +58,11 @@ def load_config():
     with open(CONFIG_FILE_PATH, "r") as config_file:
         return json.load(config_file)
 
+
 def save_config(config):
     with open(CONFIG_FILE_PATH, "w") as config_file:
         json.dump(config, config_file, indent=2)
+
 
 def check_resources():
     cpu_percent = psutil.cpu_percent()
@@ -84,13 +101,18 @@ def list_reports():
     print(reports)
     return reports
 
+
 import os
+
 
 def get_last_report():
     reports = list_reports()
     if reports:
 
-        reports_with_dates = [(report, os.path.getctime(os.path.join(REPORTS_DIR, report))) for report in reports]
+        reports_with_dates = [
+            (report, os.path.getctime(os.path.join(REPORTS_DIR, report)))
+            for report in reports
+        ]
         sorted_reports = sorted(reports_with_dates, key=lambda x: x[1], reverse=True)
         latest_report_name = sorted_reports[0][0]
         latest_report_path = os.path.join(REPORTS_DIR, latest_report_name)
@@ -101,8 +123,6 @@ def get_last_report():
     else:
         logging.warning("No reports available.")
         return None
-
-
 
 
 def get_average_report(last_x_hours):
@@ -134,15 +154,17 @@ def get_average_report(last_x_hours):
         logging.warning("No reports available.")
         return None
 
+
 def is_port_open(host, port):
     try:
         with socket.create_connection((host, port), timeout=1):
             return True
     except (socket.timeout, ConnectionRefusedError):
         return False
-    
+
+
 def check_ports_status(config):
-    logging.info("Loaded configuration: %s", config)  
+    logging.info("Loaded configuration: %s", config)
     ports_status = {}
     for port in config.get("ports", []):
         port_status = "Open" if is_port_open("127.0.0.1", port) else "Closed"
@@ -151,8 +173,9 @@ def check_ports_status(config):
     logging.info("Port status: %s", ports_status)
     return ports_status
 
+
 if __name__ == "__main__":
-    
+
     if "check" in os.sys.argv:
         check_resources()
 
@@ -168,4 +191,3 @@ if __name__ == "__main__":
 
     else:
         print("Usage: python monit.py [check | list | get last | get avg X]")
-
