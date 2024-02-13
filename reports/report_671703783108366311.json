@@ -1,0 +1,12 @@
+{
+  "timestamp": "2024-02-12 16:30:31",
+  "id": "671703783108366311",
+  "cpu_percent": 28.6,
+  "ram_percent": 37.8,
+  "disk_percent": 94.9,
+  "ports_status": {
+    "80": "Closed",
+    "443": "Closed",
+    "7777": "Closed"
+  }
+}
