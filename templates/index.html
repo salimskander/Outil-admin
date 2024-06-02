@@ -7,14 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <h1>MonitEyes v1</h1>
-
-    <button onclick="verifierRessources()">Vérifier les Ressources</button>
-    <button onclick="listeRapports()">Lister les Rapports</button>
-    <button onclick="dernierRapport()">Dernier Rapport</button>
-    <button onclick="rapportMoyen()">Rapport Moyen</button>
-
-    <div id="resultat"></div>
+    <div class="sidebar">
+        <div class="top-buttons">
+            <h1>MonitEyes v1</h1>
+            <button onclick="listeRapports()">Lister les Rapports</button>
+            <button onclick="dernierRapport()">Dernier Rapport</button>
+            <button onclick="rapportMoyen()">Rapport Moyen</button>
+        </div>
+        <button class="diagnostic-button" onclick="verifierRessources()">Lancer un Diagnostic</button>
+    </div>
+    <div class="main-content">
+        <div id="resultat"></div>
+    </div>
 
     <script>
         function verifierRessources() {
