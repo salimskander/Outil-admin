@@ -55,6 +55,10 @@ def check_resources():
     ram_percent = psutil.virtual_memory().percent
     disk_percent = psutil.disk_usage("/").percent
 
+    ram_warning = None
+    if ram_percent > 60:
+        ram_warning = f"Attention: l'utilisation de la RAM est au dessus de 60%  ({ram_percent}%)"
+
     ports_status = check_ports_status(load_config())
 
     report = {
@@ -64,17 +68,17 @@ def check_resources():
         "ram_percent": ram_percent,
         "disk_percent": disk_percent,
         "ports_status": ports_status,
+        "ram_warning": ram_warning,
     }
 
     if not os.path.exists(REPORTS_DIR):
         os.makedirs(REPORTS_DIR)
 
-    # Déterminer le nombre de rapports existants et générer le nom du nouveau rapport
     existing_reports = [f for f in os.listdir(REPORTS_DIR) if f.startswith("Report ")]
     report_number = len(existing_reports) + 1
     report_file_name = f"Report {report_number}.json"
     report_file_path = os.path.join(REPORTS_DIR, report_file_name)
-    
+
     with open(report_file_path, "w") as report_file:
         json.dump(report, report_file, indent=2)
 

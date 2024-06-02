@@ -9,7 +9,7 @@
 <body>
     <div class="sidebar">
         <div class="top-buttons">
-            <h1>MonitEyes v1</h1>
+            <h1 onclick="location.reload()">MonitEyes v1</h1>
             <button onclick="listeRapports()">Lister les Rapports</button>
             <button onclick="dernierRapport()">Dernier Rapport</button>
             <button onclick="rapportMoyen()">Rapport Moyen</button>
@@ -24,19 +24,19 @@
         function verifierRessources() {
             fetch('/api/check')
                 .then(response => response.json())
-                .then(data => document.getElementById('resultat').innerText = JSON.stringify(data, null, 2));
+                .then(data => displayResult(data));
         }
 
         function listeRapports() {
             fetch('/api/list_reports')
                 .then(response => response.json())
-                .then(data => document.getElementById('resultat').innerText = JSON.stringify(data, null, 2));
+                .then(data => displayResult(data));
         }
 
         function dernierRapport() {
             fetch('/api/get_last_report')
                 .then(response => response.json())
-                .then(data => document.getElementById('resultat').innerText = JSON.stringify(data, null, 2));
+                .then(data => displayResult(data));
         }
 
         function rapportMoyen() {
@@ -44,8 +44,18 @@
             if (dernierXHeures !== null) {
                 fetch(`/api/get_average_report/${dernierXHeures}`)
                     .then(response => response.json())
-                    .then(data => document.getElementById('resultat').innerText = JSON.stringify(data, null, 2));
+                    .then(data => displayResult(data));
             }
+        }
+
+        function displayResult(data) {
+            const resultDiv = document.getElementById('resultat');
+            resultDiv.innerHTML = '';
+
+            const pre = document.createElement('pre');
+            pre.innerText = JSON.stringify(data, null, 2);
+            resultDiv.appendChild(pre);
+
         }
     </script>
 </body>

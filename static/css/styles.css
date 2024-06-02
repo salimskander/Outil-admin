@@ -89,7 +89,7 @@ body {
 .sidebar .diagnostic-button {
     background-color: #28a745;
     margin-top: auto;
-    white-space: nowrap; /* Pour éviter le saut de ligne */
+    white-space: nowrap; 
 }
 
 @media screen and (max-width: 768px) {
@@ -113,4 +113,5 @@ body {
     .main-content {
         padding: 1rem;
     }
+
 }
