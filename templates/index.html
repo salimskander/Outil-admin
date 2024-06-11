@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonitEyes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="top-buttons">
+            <h1 onclick="location.reload()">MonitEyes v1</h1>
+            <button onclick="listeRapports()">Lister les Rapports</button>
+            <button onclick="dernierRapport()">Dernier Rapport</button>
+            <button onclick="rapportMoyen()">Rapport Moyen</button>
+        </div>
+        <button class="diagnostic-button" onclick="verifierRessources()">Lancer un Diagnostic</button>
+    </div>
+    <div class="main-content">
+        <div id="resultat"></div>
+    </div>
+
+    <script>
+        function verifierRessources() {
+            fetch('/api/check')
+                .then(response => response.json())
+                .then(data => displayResult(data));
+        }
+
+        function listeRapports() {
+            fetch('/api/list_reports')
+                .then(response => response.json())
+                .then(data => displayResult(data));
+        }
+
+        function dernierRapport() {
+            fetch('/api/get_last_report')
+                .then(response => response.json())
+                .then(data => displayResult(data));
+        }
+
+        function rapportMoyen() {
+            const dernierXHeures = prompt('Entrez le nombre d\'heures :');
+            if (dernierXHeures !== null) {
+                fetch(`/api/get_average_report/${dernierXHeures}`)
+                    .then(response => response.json())
+                    .then(data => displayResult(data));
+            }
+        }
+
+        function displayResult(data) {
+            const resultDiv = document.getElementById('resultat');
+            resultDiv.innerHTML = '';
+
+            const pre = document.createElement('pre');
+            pre.innerText = JSON.stringify(data, null, 2);
+            resultDiv.appendChild(pre);
+
+        }
+    </script>
+</body>
+</html>
