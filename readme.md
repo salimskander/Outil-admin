@@ -135,4 +135,4 @@ Ce projet est un outil de surveillance système open-source. Vos contributions e
 
 ---
 
-*MonitEyes v1.0 - Votre système sous surveillance*
+*MonitEyes v1.0 - Votre système de surveillance*
